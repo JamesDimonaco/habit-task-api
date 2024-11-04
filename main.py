@@ -1,3 +1,4 @@
+from routers import habits
 import schemas
 from models import User, TokenTable
 from database import Base, engine
@@ -100,3 +101,5 @@ def logout(
 @app.get("/")
 async def root():
     return {"message": "Hello World"}
+
+app.include_router(habits.router)
