@@ -5,7 +5,7 @@ from database import Base, engine
 from utils import create_access_token,create_refresh_token,verify_password,get_password_hash, get_session
 from fastapi import FastAPI, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from auth.auth_bearer import verify_refresh_token, verify_token
+from auth.auth_bearer import verify_refresh_token, verify_access_token
 
 Base.metadata.create_all(bind=engine)
 
@@ -49,7 +49,7 @@ def login_user(requestUser: schemas.requestDetails, db: Session = Depends(get_se
 
 @app.get('/getusers')
 def getusers(
-    token: str = Depends(verify_token),
+    user_id: int = Depends(verify_access_token),
     db: Session = Depends(get_session)
 ):
     user = db.query(User).all()
@@ -90,12 +90,13 @@ def refresh_token(
 
 @app.post("/logout")
 def logout(
-    token: str = Depends(verify_token),
+    user_id: int = Depends(verify_access_token),
     db: Session = Depends(get_session)
 ):
-    token_db = db.query(TokenTable).filter(TokenTable.access_token == token).first()
-    db.delete(token_db)
-    db.commit()
+    token_db = db.query(TokenTable).filter(TokenTable.user_id == user_id).all() 
+    for token in token_db:
+        db.delete(token)
+        db.commit()
     return {"message": "Logged out successfully"}
 
 @app.get("/")
