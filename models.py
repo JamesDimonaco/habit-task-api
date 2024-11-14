@@ -1,6 +1,8 @@
-from sqlalchemy import Column, ForeignKey, Integer, String, DateTime, Boolean
+from sqlalchemy import Column, Enum, ForeignKey, Integer, String, DateTime, Boolean
 from database import Base
 import datetime
+
+from schemas import Frequency
 
 
 class User(Base):
@@ -30,6 +32,7 @@ class Habit(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
     description = Column(String)
+    frequency = Column(Enum(Frequency))
     created_at = Column(DateTime, default=datetime.datetime.now)
     user_id = Column(Integer, ForeignKey("users.id"))
     task_id = Column(Integer, ForeignKey("tasks.id"))
