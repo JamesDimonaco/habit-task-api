@@ -24,7 +24,7 @@ class TokenTable(Base):
     created_at = Column(DateTime, default=datetime.datetime.now)
     updated_at = Column(DateTime, default=datetime.datetime.now)
 
-class Habits(Base):
+class Habit(Base):
     __tablename__ = "habits"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -34,14 +34,14 @@ class Habits(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
     task_id = Column(Integer, ForeignKey("tasks.id"))
 
-class HabitLogs(Base):
+class HabitLog(Base):
     __tablename__ = "habit_logs"
 
     id = Column(Integer, primary_key=True, index=True)
     habit_id = Column(Integer, ForeignKey("habits.id"))
     date = Column(DateTime, default=datetime.datetime.now)
 
-class Tasks(Base):
+class Task(Base):
     __tablename__ = "tasks"
 
     id = Column(Integer, primary_key=True, index=True)

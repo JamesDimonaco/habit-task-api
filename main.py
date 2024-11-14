@@ -11,23 +11,32 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
+# Add prefix for all routes
+api_router = FastAPI()
 
-@app.post("/register")
+# Move all existing routes to api_router
+@api_router.post("/register")
 def register_user(user: schemas.UserCreate, db: Session = Depends(get_session)):
+    print("user", user)
     existing_user = db.query(User).filter(User.email == user.email).first()
     if existing_user:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
     
     encrypted_password = get_password_hash(user.password)
+    try:
+        new_user = User(username=user.username, email=user.email, password=encrypted_password)
+        print(new_user)
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+        access_token = create_access_token(new_user.id)
+        refresh_token = create_refresh_token(new_user.id)
+        return {"access_token": access_token, "refresh_token": refresh_token}
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
-    new_user = User(username=user.username, email=user.email, password=encrypted_password)
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    return {"message": "User registered successfully", "user": new_user}
 
-
-@app.post("/login")
+@api_router.post("/login")
 def login_user(requestUser: schemas.requestDetails, db: Session = Depends(get_session)):
     existing_user = db.query(User).filter(User.email == requestUser.email).first()
     if not existing_user:
@@ -47,7 +56,7 @@ def login_user(requestUser: schemas.requestDetails, db: Session = Depends(get_se
     return {"access_token": access_token, "refresh_token": refresh_token}
     
 
-@app.get('/getusers')
+@api_router.get('/getusers')
 def getusers(
     user_id: int = Depends(verify_access_token),
     db: Session = Depends(get_session)
@@ -55,7 +64,15 @@ def getusers(
     user = db.query(User).all()
     return user
 
-@app.post("/change-password")
+@api_router.get('/user')
+def getuser(
+    user_id: int = Depends(verify_access_token),
+    db: Session = Depends(get_session)
+):
+    user = db.query(User).filter(User.id == user_id).first()
+    return user
+
+@api_router.post("/change-password")
 def change_password(request: schemas.changePassword, db: Session = Depends(get_session)):
     existing_user = db.query(User).filter(User.email == request.email).first()
     if not existing_user:
@@ -70,7 +87,7 @@ def change_password(request: schemas.changePassword, db: Session = Depends(get_s
     db.refresh(existing_user)
     return {"message": "Password changed successfully"}
 
-@app.post("/refresh-token")
+@api_router.post("/refresh-token")
 def refresh_token(
     db: Session = Depends(get_session),
     token: str = Depends(verify_refresh_token)
@@ -88,7 +105,7 @@ def refresh_token(
     db.refresh(token_db)
     return {"access_token": access_token, "refresh_token": refresh_token}
 
-@app.post("/logout")
+@api_router.post("/logout")
 def logout(
     user_id: int = Depends(verify_access_token),
     db: Session = Depends(get_session)
@@ -99,8 +116,12 @@ def logout(
         db.commit()
     return {"message": "Logged out successfully"}
 
-@app.get("/")
+@api_router.get("/")
 async def root():
     return {"message": "Hello World"}
 
-app.include_router(habits.router)
+# Mount the API router with prefix
+app.mount("/api", api_router)
+
+# Include the habits router with the api prefix
+api_router.include_router(habits.router)

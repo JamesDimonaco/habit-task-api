@@ -1,5 +1,12 @@
 from pydantic import BaseModel
 import datetime
+from enum import Enum
+
+# Define the Frequency enum
+class Frequency(str, Enum):
+    DAILY = "daily"
+    WEEKLY = "weekly"
+    MONTHLY = "monthly"
 
 class UserCreate(BaseModel):
     username: str
@@ -13,6 +20,7 @@ class TokenSchema(BaseModel):
 class requestDetails(BaseModel):
     email: str
     password: str
+
 class changePassword(BaseModel):
     email: str
     old_password: str
@@ -21,6 +29,6 @@ class changePassword(BaseModel):
 class HabitCreate(BaseModel):
     name: str
     description: str
-    user_id: int
+    frequency: Frequency = Frequency.DAILY
 
 
